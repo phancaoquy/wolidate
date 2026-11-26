@@ -3,6 +3,7 @@
   import { listen } from '@tauri-apps/api/event'
   import LibraryView from './components/library/LibraryView.svelte'
   import ReaderView from './components/reader/ReaderView.svelte'
+  import TitleBar from './components/TitleBar.svelte'
   import { library } from './lib/stores/library.svelte'
   import { reader } from './lib/stores/reader.svelte'
   import { isTauri, takePendingOpen } from './lib/ipc/commands'
@@ -79,11 +80,16 @@
   })
 </script>
 
-{#if reader.activeBook}
-  <ReaderView />
-{:else}
-  <LibraryView />
-{/if}
+<div class="app-shell">
+  <TitleBar />
+  <main class="app-main">
+    {#if reader.activeBook}
+      <ReaderView />
+    {:else}
+      <LibraryView />
+    {/if}
+  </main>
+</div>
 
 {#if toast}
   <div class="toast" role="status">{toast}</div>

@@ -17,12 +17,18 @@
 3. `just check-rust` -> `cargo check --manifest-path src-tauri/Cargo.toml`
 
 ## Local Toolchain Notes (2026-11-26)
-- `just` is not installed on this machine. Run the equivalent commands directly until it is installed:
-  - `npm run check && npm run build`
-  - `cargo test --manifest-path src-tauri/Cargo.toml -p foliate-core`
-  - `cargo check --manifest-path src-tauri/Cargo.toml`
-- No CMake on this machine, so `zip`/`flate2` use the pure-Rust deflate backend for now. Restore `deflate-zlib-ng` / `zlib-ng` once CMake is available.
-- The Android Rust target (`aarch64-linux-android`) is not installed. `check-android` cannot run yet.
+- `just` 1.59 is installed via WinGet at
+  `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Casey.Just_Microsoft.Winget.Source_8wekyb3d8bbwe\just.exe`.
+  Restart the terminal to pick up the PATH change. The justfile uses PowerShell
+  (`pwsh -NoProfile -Command`) because the available Bash is not a Windows shell.
+- CMake 4.4.4 portable is installed at
+  `%LOCALAPPDATA%\Programs\CMake-4.4.4\cmake-4.4.4-windows-x86_64\bin` and added
+  to the user PATH. `.cargo/config.toml` sets `CMAKE_POLICY_VERSION_MINIMUM=3.5`
+  so zlib-ng's older CMake minimum works. `zip`/`flate2` now use zlib-ng.
+- The Windows CMake MSI install prompted for UAC and was abandoned; use the
+  portable build. A stale consent dialog may need to be dismissed by the human.
+- Android is blocked: no SDK/NDK, no `adb`/`sdkmanager`/Gradle, Java is 8
+  (Tauri/AGP need 17+), and the `aarch64-linux-android` Rust target is absent.
 - The custom protocol serves bounded byte ranges (8 MiB max) because the Tauri custom-protocol responder buffers responses. Larger ranges return `416`; clients continue with smaller ranges. Raw book requests without a `Range` header are rejected.
 - Keyring uses `keyring-core` 1.1 with the platform stores directly: Windows Credential Manager and the Android Keystore-backed store. The spec's `keyring 3.6` has no Android backend.
 - Google desktop OAuth clients usually require a loopback redirect. v0.1 implements the custom-scheme deep-link callback; a Windows loopback listener is still a human decision.

@@ -1,8 +1,14 @@
-set shell := ["bash", "-cu"]
+set shell := ["pwsh", "-NoProfile", "-Command"]
 
 bootstrap:
     npm install
     node scripts/bootstrap-vendor.mjs
+
+dev:
+    npm run tauri dev
+
+build:
+    npm run tauri build
 
 check-frontend:
     npm run check

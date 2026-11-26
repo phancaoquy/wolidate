@@ -57,12 +57,27 @@ pub async fn open_book(app: &AppHandle, uri: &str) -> Result<OpenedBook> {
     })
 }
 
-/// Format a protocol path segment safely for an Android/content or Windows path.
+/// Turn a file name into a title without relying on container metadata.
 pub fn display_title(display_name: &str) -> String {
-    std::path::Path::new(display_name)
+    let fallback = std::path::Path::new(display_name)
         .file_stem()
         .and_then(|stem| stem.to_str())
-        .map(|stem| stem.replace(['_', '-'], " "))
-        .filter(|title| !title.trim().is_empty())
-        .unwrap_or_else(|| display_name.to_owned())
+        .unwrap_or(display_name)
+        .replace(['_', '-'], " ");
+    let title = fallback
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    if title.trim().is_empty() {
+        display_name.to_owned()
+    } else {
+        title
+    }
 }

@@ -144,6 +144,26 @@ class LibraryStore {
     }
   }
 
+  async renameCollection(id: string, name: string): Promise<void> {
+    if (!name.trim()) return
+    try {
+      await api.renameCollection(id, name.trim())
+      await this.refresh()
+    } catch (error) {
+      this.error = message(error)
+    }
+  }
+
+  async removeCollection(id: string): Promise<void> {
+    try {
+      await api.deleteCollection(id)
+      if (this.activeCollection === id) this.activeCollection = null
+      await this.refresh()
+    } catch (error) {
+      this.error = message(error)
+    }
+  }
+
   async sync(): Promise<void> {
     if (!api.isTauri() || this.syncing) return
     this.syncing = true

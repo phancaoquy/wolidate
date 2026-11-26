@@ -1,0 +1,4 @@
+[env]
+# CMake 4 removed compatibility with CMakeLists that declare a minimum below
+# 3.5. zlib-ng still does; this keeps its portable CMake build working.
+CMAKE_POLICY_VERSION_MINIMUM = "3.5"

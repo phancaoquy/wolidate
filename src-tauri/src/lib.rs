@@ -386,6 +386,68 @@ async fn take_pending_open(state: State<'_, AppState>) -> Result<Vec<String>, St
     Ok(std::mem::take(&mut *pending))
 }
 
+#[tauri::command]
+fn set_window_theme(
+    window: tauri::WebviewWindow,
+    theme: String,
+    caption: String,
+    text: String,
+) -> Result<(), String> {
+    let theme = match theme.as_str() {
+        "dark" => Some(tauri::Theme::Dark),
+        "light" | "sepia" => Some(tauri::Theme::Light),
+        _ => None,
+    };
+    window.set_theme(theme).map_err(error_string)?;
+    #[cfg(windows)]
+    apply_caption_colors(&window, &caption, &text);
+    Ok(())
+}
+
+#[cfg(windows)]
+fn apply_caption_colors(window: &tauri::WebviewWindow, caption: &str, text: &str) {
+    use std::ffi::c_void;
+    use windows_sys::Win32::Graphics::Dwm::{
+        DwmSetWindowAttribute, DWMWA_CAPTION_COLOR, DWMWA_TEXT_COLOR,
+    };
+
+    fn colorref(hex: &str) -> Option<u32> {
+        let value = hex.trim().strip_prefix('#')?;
+        if value.len() != 6 {
+            return None;
+        }
+        let r = u32::from_str_radix(&value[0..2], 16).ok()?;
+        let g = u32::from_str_radix(&value[2..4], 16).ok()?;
+        let b = u32::from_str_radix(&value[4..6], 16).ok()?;
+        Some(r | (g << 8) | (b << 16))
+    }
+
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    let hwnd = hwnd.0;
+    if let Some(color) = colorref(caption) {
+        unsafe {
+            DwmSetWindowAttribute(
+                hwnd,
+                DWMWA_CAPTION_COLOR as u32,
+                &color as *const u32 as *const c_void,
+                std::mem::size_of::<u32>() as u32,
+            );
+        }
+    }
+    if let Some(color) = colorref(text) {
+        unsafe {
+            DwmSetWindowAttribute(
+                hwnd,
+                DWMWA_TEXT_COLOR as u32,
+                &color as *const u32 as *const c_void,
+                std::mem::size_of::<u32>() as u32,
+            );
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Deep links
 // ---------------------------------------------------------------------------
@@ -401,7 +463,7 @@ fn emit_oauth(app: &AppHandle, ok: bool, message: impl Into<String>) {
 }
 
 fn handle_deep_link(app: AppHandle, url: url::Url) {
-    if url.scheme() != "foliate" {
+    if url.scheme() != "wolidate" {
         return;
     }
     let is_oauth = url.host_str() == Some("oauth2redirect") || url.path() == "/oauth2redirect";
@@ -857,6 +919,7 @@ pub fn run() {
             google_oauth_disconnect,
             device_id,
             take_pending_open,
+            set_window_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running wolidate");

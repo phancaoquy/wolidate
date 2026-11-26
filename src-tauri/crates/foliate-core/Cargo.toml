@@ -7,7 +7,7 @@ rust-version = "1.85"
 [dependencies]
 base64 = "0.22"
 blake3 = "1.5"
-flate2 = "1.0"
+flate2 = { version = "1.0", default-features = false, features = ["zlib-ng"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 percent-encoding = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "gzip", "rustls-tls-native-roots"] }
@@ -18,7 +18,7 @@ serde_json = "1.0"
 thiserror = "2.0"
 tokio = { version = "1.43", features = ["sync", "time"] }
 uuid = { version = "1.12", features = ["v7", "serde"] }
-zip = { version = "2.2", default-features = false, features = ["deflate"] }
+zip = { version = "2.2", default-features = false, features = ["deflate-zlib-ng"] }
 
 [dev-dependencies]
 tempfile = "3"

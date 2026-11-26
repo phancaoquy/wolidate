@@ -202,3 +202,12 @@ export async function takePendingOpen(): Promise<string[]> {
   requireTauri()
   return invoke<string[]>('take_pending_open')
 }
+
+export async function setWindowTheme(
+  theme: 'light' | 'dark' | 'system' | 'sepia',
+  caption: string,
+  text: string,
+): Promise<void> {
+  if (!isTauri()) return
+  await invoke('set_window_theme', { theme, caption, text })
+}

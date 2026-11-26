@@ -1,29 +1,66 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { reader } from '../../lib/stores/reader.svelte'
-  import type { ReaderTheme } from '../../lib/stores/reader.svelte'
+  import type { ReaderFont, ReaderTheme } from '../../lib/stores/reader.svelte'
 
   const themes: Array<{ id: ReaderTheme; label: string }> = [
+    { id: 'system', label: 'Auto' },
     { id: 'light', label: 'Light' },
     { id: 'sepia', label: 'Sepia' },
     { id: 'dark', label: 'Dark' },
   ]
+
+  const fonts: Array<{ id: ReaderFont; label: string; sample: string }> = [
+    { id: 'serif', label: 'Serif', sample: 'Aa' },
+    { id: 'sans', label: 'Sans', sample: 'Aa' },
+    { id: 'mono', label: 'Mono', sample: 'Aa' },
+  ]
 </script>
 
 <div class="typography-menu" role="dialog" aria-label="Typography">
-  <header class="sidebar-header" style="padding:0 0 10px;border:0">
-    <h2>Typography</h2>
+  <header class="popover-header">
+    <h2>Appearance</h2>
     <button
       class="icon-button"
-      aria-label="Close typography"
+      aria-label="Close appearance"
       onclick={() => (reader.typographyOpen = false)}
     >
-      ×
+      <Icon name="close" size={16} />
     </button>
   </header>
 
   <div class="field">
+    <div class="field-label">Theme</div>
+    <div class="segmented">
+      {#each themes as theme (theme.id)}
+        <button
+          class:active={reader.theme === theme.id}
+          onclick={() => reader.setTheme(theme.id)}
+        >
+          {theme.label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="field-label">Typeface</div>
+    <div class="segmented font-segmented">
+      {#each fonts as font (font.id)}
+        <button
+          class:active={reader.fontFamily === font.id}
+          class={`font-${font.id}`}
+          onclick={() => reader.setFontFamily(font.id)}
+        >
+          {font.sample}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="field">
     <label for="font-size">
-      <span>Font size</span>
+      <span>Text size</span>
       <span>{Math.round(reader.fontSize * 100)}%</span>
     </label>
     <input
@@ -40,7 +77,7 @@
 
   <div class="field">
     <label for="line-height">
-      <span>Line height</span>
+      <span>Line spacing</span>
       <span>{reader.lineHeight.toFixed(1)}</span>
     </label>
     <input
@@ -55,19 +92,5 @@
           Number((event.currentTarget as HTMLInputElement).value),
         )}
     />
-  </div>
-
-  <div class="field">
-    <div class="field-label">Theme</div>
-    <div class="theme-row">
-      {#each themes as theme (theme.id)}
-        <button
-          class:active={reader.theme === theme.id}
-          onclick={() => reader.setTheme(theme.id)}
-        >
-          {theme.label}
-        </button>
-      {/each}
-    </div>
   </div>
 </div>

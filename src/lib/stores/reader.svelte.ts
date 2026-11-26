@@ -1,8 +1,10 @@
 import * as api from '../ipc/commands'
 import type { Annotation, AnnotationInput, Book } from '../ipc/commands'
 
-export type ReaderTheme = 'light' | 'dark' | 'sepia'
-export type SidebarTab = 'toc' | 'notes' | 'search' | null
+export type ReaderTheme = 'system' | 'light' | 'dark' | 'sepia'
+export type ReaderFont = 'serif' | 'sans' | 'mono'
+export type SidebarTab = 'toc' | 'notes' | 'bookmarks' | 'search'
+export type PageLayout = 'scroll' | 'single' | 'spread'
 
 export interface TocItem {
   label: string
@@ -17,9 +19,11 @@ export interface TextSelection {
   y: number
 }
 
-const THEME_KEY = 'foliate.theme'
-const FONT_KEY = 'foliate.fontSize'
-const LINE_KEY = 'foliate.lineHeight'
+const THEME_KEY = 'wolidate.theme'
+const FONT_KEY = 'wolidate.fontSize'
+const LINE_KEY = 'wolidate.lineHeight'
+const FAMILY_KEY = 'wolidate.fontFamily'
+const LAYOUT_KEY = 'wolidate.pageLayout'
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -33,34 +37,68 @@ class ReaderStore {
   annotations = $state<Annotation[]>([])
   loading = $state(false)
   error = $state<string | null>(null)
-  theme = $state<ReaderTheme>('light')
+  theme = $state<ReaderTheme>('system')
+  resolvedTheme = $state<'light' | 'dark' | 'sepia'>('light')
   fontSize = $state(1)
   lineHeight = $state(1.6)
-  sidebarTab = $state<SidebarTab>(null)
+  fontFamily = $state<ReaderFont>('serif')
+  pageLayout = $state<PageLayout>('scroll')
+  sidebarTab = $state<SidebarTab>('toc')
+  sidebarOpen = $state(false)
+  sidebarPinned = $state(true)
+  detailsOpen = $state(false)
   typographyOpen = $state(false)
   ttsActive = $state(false)
   selection = $state<TextSelection | null>(null)
+  location = $state<{ current: number; total: number } | null>(null)
   private saveTimer: number | undefined
 
   constructor() {
     if (typeof localStorage !== 'undefined') {
       const theme = localStorage.getItem(THEME_KEY)
-      if (theme === 'light' || theme === 'dark' || theme === 'sepia') this.theme = theme
+      if (
+        theme === 'system' ||
+        theme === 'light' ||
+        theme === 'dark' ||
+        theme === 'sepia'
+      ) {
+        this.theme = theme
+      }
       const font = Number(localStorage.getItem(FONT_KEY))
       if (Number.isFinite(font) && font >= 0.8 && font <= 2) this.fontSize = font
       const line = Number(localStorage.getItem(LINE_KEY))
       if (Number.isFinite(line) && line >= 1.2 && line <= 2.4) this.lineHeight = line
+      const family = localStorage.getItem(FAMILY_KEY)
+      if (family === 'serif' || family === 'sans' || family === 'mono') {
+        this.fontFamily = family
+      }
+      const layout = localStorage.getItem(LAYOUT_KEY)
+      if (layout === 'scroll' || layout === 'single' || layout === 'spread') {
+        this.pageLayout = layout
+      }
     }
     this.applyTheme()
+    if (typeof window !== 'undefined') {
+      window
+        .matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', () => {
+          if (this.theme === 'system') this.applyTheme()
+        })
+    }
   }
 
   async open(book: Book): Promise<void> {
     this.loading = true
     this.error = null
-    this.sidebarTab = null
+    this.sidebarTab = 'toc'
+    this.sidebarOpen =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 900px)').matches
+    this.detailsOpen = false
     this.typographyOpen = false
     this.selection = null
     this.ttsActive = false
+    this.location = null
     this.cfi = book.progressCfi
     this.fraction = book.progressFraction
     this.annotations = []
@@ -91,16 +129,23 @@ class ReaderStore {
     this.fraction = 0
     this.toc = []
     this.annotations = []
-    this.sidebarTab = null
+    this.sidebarOpen = false
+    this.detailsOpen = false
     this.typographyOpen = false
     this.selection = null
     this.ttsActive = false
+    this.location = null
   }
 
-  onRelocate(detail: { cfi?: string; fraction?: number }): void {
+  onRelocate(detail: {
+    cfi?: string
+    fraction?: number
+    location?: { current: number; total: number }
+  }): void {
     if (!this.activeBook) return
     if (typeof detail.cfi === 'string') this.cfi = detail.cfi
     if (typeof detail.fraction === 'number') this.fraction = detail.fraction
+    if (detail.location) this.location = detail.location
     this.selection = null
     this.scheduleProgressSave()
   }
@@ -148,14 +193,24 @@ class ReaderStore {
     }
   }
 
-  toggleSidebar(tab: Exclude<SidebarTab, null>): void {
-    this.sidebarTab = this.sidebarTab === tab ? null : tab
+  toggleSidebar(tab: SidebarTab): void {
+    if (this.sidebarOpen && this.sidebarTab === tab) {
+      this.sidebarOpen = false
+    } else {
+      this.sidebarTab = tab
+      this.sidebarOpen = true
+    }
+    this.typographyOpen = false
+  }
+
+  setSidebarTab(tab: SidebarTab): void {
+    this.sidebarTab = tab
+    this.sidebarOpen = true
     this.typographyOpen = false
   }
 
   toggleTypography(): void {
     this.typographyOpen = !this.typographyOpen
-    if (this.typographyOpen) this.sidebarTab = null
   }
 
   setTheme(theme: ReaderTheme): void {
@@ -163,11 +218,19 @@ class ReaderStore {
     this.applyTheme()
   }
 
+  setPageLayout(layout: PageLayout): void {
+    this.pageLayout = layout
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(LAYOUT_KEY, layout)
+    }
+  }
+
   cycleTheme(): void {
     const next: Record<ReaderTheme, ReaderTheme> = {
+      system: 'light',
       light: 'sepia',
       sepia: 'dark',
-      dark: 'light',
+      dark: 'system',
     }
     this.setTheme(next[this.theme])
   }
@@ -186,6 +249,13 @@ class ReaderStore {
     }
   }
 
+  setFontFamily(family: ReaderFont): void {
+    this.fontFamily = family
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(FAMILY_KEY, family)
+    }
+  }
+
   setSelection(selection: TextSelection | null): void {
     this.selection = selection
   }
@@ -196,11 +266,31 @@ class ReaderStore {
   }
 
   private applyTheme(): void {
+    const systemDark =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    const resolved: 'light' | 'dark' | 'sepia' =
+      this.theme === 'system'
+        ? systemDark
+          ? 'dark'
+          : 'light'
+        : this.theme
+    this.resolvedTheme = resolved
     if (typeof document !== 'undefined') {
-      document.documentElement.dataset.theme = this.theme
+      document.documentElement.dataset.theme = resolved
     }
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(THEME_KEY, this.theme)
+    }
+    if (typeof document !== 'undefined') {
+      const style = getComputedStyle(document.documentElement)
+      void api
+        .setWindowTheme(
+          this.theme,
+          style.getPropertyValue('--bg-elevated').trim(),
+          style.getPropertyValue('--text').trim(),
+        )
+        .catch(() => undefined)
     }
   }
 }

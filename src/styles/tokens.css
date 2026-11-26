@@ -15,6 +15,7 @@
   --danger: #b3261e;
   --shadow: 0 8px 28px rgb(20 20 20 / 12%);
   --reader-bg: #fbfaf7;
+  --reader-desk: #e9e7e2;
   --reader-text: #22211f;
   --reader-link: #1f6f5c;
 }
@@ -35,6 +36,7 @@
   --danger: #ff7b72;
   --shadow: 0 10px 32px rgb(0 0 0 / 45%);
   --reader-bg: #1b1c1e;
+  --reader-desk: #101112;
   --reader-text: #dedcd6;
   --reader-link: #7bd3bd;
 }
@@ -55,6 +57,7 @@
   --danger: #9b2c20;
   --shadow: 0 8px 28px rgb(70 50 20 / 16%);
   --reader-bg: #f3e8d1;
+  --reader-desk: #e5d7bd;
   --reader-text: #3f3526;
   --reader-link: #8b5e34;
 }

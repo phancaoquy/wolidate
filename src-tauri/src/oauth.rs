@@ -1,8 +1,9 @@
 //! Google OAuth 2.0 with PKCE, plus OS keyring persistence.
 //!
-//! Client ids are never committed. Set `FOLIATE_GOOGLE_CLIENT_ID` at build or
-//! run time. The redirect URI defaults to `foliate://oauth2redirect` and can
-//! be overridden with `FOLIATE_OAUTH_REDIRECT`.
+//! Client ids are never committed. Set `WOLIDATE_GOOGLE_CLIENT_ID` at build or
+//! run time. The redirect URI defaults to `wolidate://oauth2redirect` and can
+//! be overridden with `WOLIDATE_OAUTH_REDIRECT`. The old `FOLIATE_*` names are
+//! still accepted for compatibility.
 
 use base64::Engine as _;
 use rand::RngCore;
@@ -17,7 +18,7 @@ pub const TOKEN_ENDPOINT: &str = "https://oauth2.googleapis.com/token";
 pub const DRIVE_APPDATA_SCOPE: &str = "https://www.googleapis.com/auth/drive.appdata";
 pub const KEYRING_SERVICE: &str = "io.github.phancaoquy.wolidate";
 pub const KEYRING_USER: &str = "google-drive";
-pub const DEFAULT_REDIRECT_URI: &str = "foliate://oauth2redirect";
+pub const DEFAULT_REDIRECT_URI: &str = "wolidate://oauth2redirect";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -59,18 +60,21 @@ pub fn now_ms() -> i64 {
 }
 
 pub fn client_id() -> Option<String> {
-    std::env::var("FOLIATE_GOOGLE_CLIENT_ID")
+    std::env::var("WOLIDATE_GOOGLE_CLIENT_ID")
+        .or_else(|_| std::env::var("FOLIATE_GOOGLE_CLIENT_ID"))
         .ok()
         .filter(|value| !value.is_empty())
         .or_else(|| {
-            option_env!("FOLIATE_GOOGLE_CLIENT_ID")
+            option_env!("WOLIDATE_GOOGLE_CLIENT_ID")
+                .or(option_env!("FOLIATE_GOOGLE_CLIENT_ID"))
                 .map(str::to_owned)
                 .filter(|value| !value.is_empty())
         })
 }
 
 pub fn redirect_uri() -> String {
-    std::env::var("FOLIATE_OAUTH_REDIRECT")
+    std::env::var("WOLIDATE_OAUTH_REDIRECT")
+        .or_else(|_| std::env::var("FOLIATE_OAUTH_REDIRECT"))
         .ok()
         .filter(|value| !value.is_empty())
         .unwrap_or_else(|| DEFAULT_REDIRECT_URI.to_owned())
@@ -91,7 +95,7 @@ pub fn pkce_challenge(verifier: &str) -> String {
 /// Start an authorization-code + PKCE flow.
 pub fn begin() -> Result<(PendingAuth, String), String> {
     let client_id = client_id().ok_or_else(|| {
-        "FOLIATE_GOOGLE_CLIENT_ID is not set; Google Drive sync is disabled".to_string()
+        "WOLIDATE_GOOGLE_CLIENT_ID is not set; Google Drive sync is disabled".to_string()
     })?;
     let state = random_urlsafe(24);
     let verifier = random_urlsafe(48);
@@ -125,7 +129,8 @@ pub async fn exchange_code(
     code: &str,
     pending: &PendingAuth,
 ) -> Result<TokenSet, String> {
-    let client_id = client_id().ok_or_else(|| "FOLIATE_GOOGLE_CLIENT_ID is not set".to_string())?;
+    let client_id =
+        client_id().ok_or_else(|| "WOLIDATE_GOOGLE_CLIENT_ID is not set".to_string())?;
     let response = http
         .post(TOKEN_ENDPOINT)
         .form(&[
@@ -142,7 +147,8 @@ pub async fn exchange_code(
 }
 
 pub async fn refresh(http: &reqwest::Client, refresh_token: &str) -> Result<TokenSet, String> {
-    let client_id = client_id().ok_or_else(|| "FOLIATE_GOOGLE_CLIENT_ID is not set".to_string())?;
+    let client_id =
+        client_id().ok_or_else(|| "WOLIDATE_GOOGLE_CLIENT_ID is not set".to_string())?;
     let response = http
         .post(TOKEN_ENDPOINT)
         .form(&[

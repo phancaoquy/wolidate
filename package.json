@@ -5,7 +5,9 @@
   "description": "Personal-use, open-source Windows replication of Foliate",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/bootstrap-vendor.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/bootstrap-vendor.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "check": "npm run check:ts && svelte-check --tsconfig ./tsconfig.json",
