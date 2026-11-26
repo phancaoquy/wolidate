@@ -1,11 +1,13 @@
-# Foliate v0.1
+# wolidate
 
-Local-first EPUB/MOBI/FB2/CBZ/PDF reader for Windows and Android, with
-optional Google Drive status sync. Book files never leave the device.
+**wolidate is a personal-use, open-source Windows replication of
+[Foliate](https://github.com/johnfactotum/foliate).** It is a local-first
+EPUB/MOBI/FB2/CBZ/PDF reader with optional Google Drive status sync. Book files
+never leave the device.
 
-This repository is the v0.1 scaffold described in the architecture brief. The
-core is platform-neutral Rust; the Tauri host is a thin shell; the frontend is
-Svelte 5 runes + TypeScript.
+This repository is the v0.1 implementation. The core is platform-neutral Rust;
+the Tauri host is a thin shell; the frontend is Svelte 5 runes + TypeScript.
+The Android shell is scaffolded but Windows is the primary target.
 
 ## Status
 
@@ -137,4 +139,3 @@ cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 - Google Drive sync covers reading status and annotations, not book files.
 - `just` and CMake are not installed on the initialization machine. The
   equivalent npm/cargo commands were used for the gates.
-# wolidate

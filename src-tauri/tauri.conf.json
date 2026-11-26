@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "wolidate",
+  "version": "0.1.0",
+  "identifier": "io.github.phancaoquy.wolidate",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "wolidate",
+        "width": 1120,
+        "height": 760,
+        "minWidth": 360,
+        "minHeight": 540,
+        "additionalBrowserArgs": "--disable-features=BackForwardCache,Translate,MediaRouter,OptimizationHints --js-flags=\"--optimize-for-size\""
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' http://book.localhost blob: data:; connect-src 'self' http://book.localhost; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' http://book.localhost blob: data:; font-src 'self' http://book.localhost data:; worker-src 'self' blob:;",
+      "devCsp": "default-src 'self' http://localhost:5173 http://book.localhost blob: data:; connect-src 'self' http://localhost:5173 ws://localhost:5173 http://book.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; style-src 'self' 'unsafe-inline'; img-src 'self' http://localhost:5173 http://book.localhost blob: data:; font-src 'self' http://localhost:5173 http://book.localhost data:; worker-src 'self' blob:;"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "publisher": "phancaoquy",
+    "homepage": "https://github.com/phancaoquy/wolidate",
+    "shortDescription": "Personal-use Windows replication of Foliate",
+    "longDescription": "wolidate is a personal-use, open-source Windows desktop replication of Foliate. It reads EPUB, MOBI, AZW3, FB2, CBZ, and PDF locally and can sync reading status through Google Drive.",
+    "category": "Reference",
+    "copyright": "Copyright © 2026 phancaoquy",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"],
+    "fileAssociations": [
+      { "ext": ["epub"], "mimeType": "application/epub+zip", "description": "EPUB E-Book" },
+      { "ext": ["mobi", "azw", "azw3"], "mimeType": "application/x-mobipocket-ebook", "description": "Kindle E-Book" },
+      { "ext": ["fb2"], "mimeType": "application/x-fictionbook+xml", "description": "FictionBook" },
+      { "ext": ["cbz"], "mimeType": "application/vnd.comicbook+zip", "description": "Comic Book Archive" },
+      { "ext": ["pdf"], "mimeType": "application/pdf", "description": "PDF Document" }
+    ]
+  },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        { "scheme": ["foliate"], "appLink": false }
+      ],
+      "desktop": {
+        "schemes": ["foliate"]
+      }
+    }
+  }
+}
